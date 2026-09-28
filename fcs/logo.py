@@ -29,22 +29,41 @@ class Params:
     col_f: float = 50.0  # F stem, outer stripe
     col_c: float = 126.0  # C outer stripe
     col_s_top: float = 204.0  # S upper-left, outer stripe
-    col_s_bottom: float = 252.0  # S lower-right, inner stripe (see s_bowl/s_waist)
+    col_s_bottom: float = 248.0  # S lower-right, inner stripe
     # innermost corner radii of each concentric corner group (centerline)
     # (all corners around the F crossbar are hard, mitred corners)
     f_top: float = 18.0  # F top-left (H stripe; B, A are +1, +2 pitch)
     c_top: float = 32.0  # C top-left
     c_bowl: float = 20.0  # C bottom-left
     s_foot: float = 4.0  # S bottom-right
-    # S middle runs horizontally on rows 3 (Main), 4 (D), 5 (E). Its length for
-    # D is (col_s_bottom - col_s_top) - (s_bowl + s_waist + 2 * pitch) * 1.428
-    # (1.428 = tan 55 deg for the 110 deg turns); it must stay >= 0.
-    s_bowl: float = 4.0  # S lower bowl, top-right
-    s_waist: float = 1.0  # S middle, left (0 = sharp inner corner)
     s_top: float = 10.0  # S top-left
+    # S middle: three straight lines fix it, the corners are derived.
+    #   upper column  col_s_top (pink), middle row 4 + s_drop / pitch (green),
+    #   lower column  col_s_bottom (yellow), middle straight length s_mid.
+    # The S bowl corner radius (s_bowl) is whatever fits; see s_bowl below.
+    s_mid: float = 1.0  # length of the horizontal S middle (same for all 3 stripes)
+    s_waist: float = 0.0  # S middle, left, inner radius (0 = sharp inner corner)
     # moves the S middle rows down; lengthens the upper-left S straight by
     # s_drop / sin(slant) and shortens the lower bowl straight by the same
-    s_drop: float = 3.0
+    s_drop: float = 2.0
+
+    @property
+    def s_bowl(self) -> float:
+        """Inner radius of the S bowl top-right corner, derived from the lines.
+
+        The two turns around the middle straight take tan(turn / 2) * (sum of
+        radii) of horizontal room; the middle stripe's radii are inner + pitch.
+        """
+        room = self.col_s_bottom - self.col_s_top - self.s_mid
+        tan_half = math.tan(math.radians((180.0 - self.slant) / 2))
+        radius = room / tan_half - 2 * self.pitch - self.s_waist
+        if radius < 0:
+            need = self.col_s_top + self.s_mid + tan_half * (2 * self.pitch + self.s_waist)
+            raise ValueError(
+                f"S middle does not fit: s_bowl would be {radius:.3f}. "
+                f"Use col_s_bottom >= {need:.3f}, or a shorter s_mid / smaller s_waist."
+            )
+        return radius
 
     @property
     def pitch(self) -> float:

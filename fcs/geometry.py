@@ -67,6 +67,10 @@ class Line:
         return dot(sub(p, self.q), left(self.u))
 
 
+def same_line(a: Line, b: Line) -> bool:
+    return abs(cross(a.u, b.u)) < 1e-9 and dot(a.u, b.u) > 0 and abs(a.distance(b.q)) < 1e-6
+
+
 def intersect(a: Line, b: Line) -> Vec:
     den = cross(a.u, b.u)
     if abs(den) < EPS:
@@ -215,8 +219,13 @@ def _turn(u_in: Vec, u_out: Vec, r: float) -> float:
     return ang
 
 
-def primitives(belt: Belt) -> list[Prim]:
-    """Exact line/arc decomposition of a belt. Raises if the belt folds back."""
+def primitives(belt: Belt, strict: bool = True) -> list[Prim]:
+    """Exact line/arc decomposition of a belt. Raises if the belt folds back.
+
+    strict: consecutive fillets on one grid line must keep a straight of
+    length >= 0 on that line. Non-strict (used for stripe edges) falls back to
+    the direct tangent when the inner edge of a tight corner has no room.
+    """
     points: list[Vec] = [intersect(belt.start, belt.start_cut)]
     dirs: list[Vec] = [belt.start.u]
     # tangent points: entry/exit per pulley
@@ -233,6 +242,13 @@ def primitives(belt: Belt) -> list[Prim]:
             if abs(k.distance(a)) > 1e-6:
                 raise ValueError(f"{belt.name}: knee line does not leave previous pulley")
             a, b, u = a, circle_entry(k, p2), k.u
+        elif p1.lines and p2.lines and same_line(p1.lines[1], p2.lines[0]):
+            # consecutive fillets on one grid line: the straight must stay on it
+            # (a backwards straight means the two corners do not fit)
+            ln = p1.lines[1]
+            a, b, u = sub(p1.c, mul(left(ln.u), p1.r)), sub(p2.c, mul(left(ln.u), p2.r)), ln.u
+            if not strict and dot(sub(b, a), u) < 0:
+                a, b, u = tangent(p1, p2)
         else:
             a, b, u = tangent(p1, p2)
         exits.append(a)
@@ -250,7 +266,10 @@ def primitives(belt: Belt) -> list[Prim]:
     seg_ends = [*entries, end_pt]
     for i, (a, b) in enumerate(zip(seg_starts, seg_ends)):
         if dot(sub(b, a), dirs[i]) < -1e-7:
-            raise ValueError(f"{belt.name}: segment {i} runs backwards")
+            raise ValueError(
+                f"{belt.name}: straight {i} would have length {dot(sub(b, a), dirs[i]):.3f}; "
+                "the corners around it do not fit"
+            )
         if norm(sub(b, a)) > 1e-9:
             prims.append(Seg(a, b))
         if i < len(belt.pulleys):

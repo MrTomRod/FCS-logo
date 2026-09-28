@@ -27,8 +27,8 @@ PX_SCALE, PX_ROW0 = 4.2, 18.5
 
 def outline(belt: Belt, half: float) -> list[Prim]:
     """Closed outline of one stripe: left edge, end cap, right edge back, start cap."""
-    lft = primitives(belt.offset(half))
-    rgt = primitives(belt.offset(-half))
+    lft = primitives(belt.offset(half), strict=False)
+    rgt = primitives(belt.offset(-half), strict=False)
     return [
         *lft,
         Seg(end_of(lft[-1]), end_of(rgt[-1])),
@@ -184,6 +184,8 @@ def main() -> int:
     p = Params()
     logo = build(p)
     belts = logo.belts
+    for b in belts:
+        primitives(b)  # centerlines must keep every straight on its grid line
     half = p.red / 2
     contours = [outline(b, half) for b in belts]
     shape = union(contours, logo)
@@ -222,6 +224,7 @@ def main() -> int:
 
     report = checks(p, belts, shape)
     print(f"size {w:.3f} x {h:.3f} units (top {top_y(p):.3f})")
+    print(f"derived S bowl inner radius s_bowl = {p.s_bowl:.4f}")
     print("\n".join(report))
     return 1 if "FAILURES:" in report else 0
 
