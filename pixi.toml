@@ -1,0 +1,15 @@
+[workspace]
+name = "fcs-logo"
+description = "Exact, parametric vector construction of the FC S crest"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.13.*"
+numpy = ">=1.26"
+skia-pathops = ">=0.8"
+imagemagick = ">=7.1"
+librsvg = ">=2.58"
+
+[tasks]
+build = "python -m fcs.build"
