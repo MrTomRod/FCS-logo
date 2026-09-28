@@ -32,8 +32,8 @@ class Params:
     col_s_bottom: float = 246.0  # S lower-right, inner stripe
     # innermost corner radii of each concentric corner group (centerline)
     # (all corners around the F crossbar are hard, mitred corners)
-    f_top: float = 16.0  # F top-left (H stripe; B, A are +1, +2 pitch)
-    c_top: float = 28.0  # C top-left
+    f_top: float = 18.0  # F top-left (H stripe; B, A are +1, +2 pitch)
+    c_top: float = 32.0  # C top-left
     c_bowl: float = 20.0  # C bottom-left
     s_foot: float = 4.0  # S bottom-right
     s_bowl: float = 4.0  # S lower bowl, top-right
