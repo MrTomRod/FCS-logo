@@ -202,6 +202,11 @@ def main() -> int:
         for b in belts
     ]
     edges = [f'<path fill="{RED}" fill-opacity="0.35" d="{exact_d(c, fr, True)}"/>' for c in contours]
+    # crossbar: bar outline and its centerline on row 4 (B centerline to inside D)
+    bar = logo.bar
+    edges.append(f'<path fill="{RED}" fill-opacity="0.35" d="M{"L".join(fr.pt(*q) for q in bar)}Z"/>')
+    mid = [((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) for a, b in ((bar[0], bar[3]), (bar[1], bar[2]))]
+    lines.append(f'<path fill="none" stroke="#000" stroke-width="0.3" d="M{fr.pt(*mid[0])}L{fr.pt(*mid[1])}"/>')
     write_svg(OUT / "construction.svg", w, h, "\n".join(edges + lines))
 
     # overlay on the original raster (px coordinates of old_logo2.jpg)
