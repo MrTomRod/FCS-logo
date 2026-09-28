@@ -29,19 +29,19 @@ class Params:
     col_f: float = 50.0  # F stem, outer stripe
     col_c: float = 126.0  # C outer stripe
     col_s_top: float = 204.0  # S upper-left, outer stripe
-    col_s_bottom: float = 246.0  # S lower-right, inner stripe
+    col_s_bottom: float = 252.0  # S lower-right, inner stripe (see s_bowl/s_waist)
     # innermost corner radii of each concentric corner group (centerline)
     # (all corners around the F crossbar are hard, mitred corners)
     f_top: float = 18.0  # F top-left (H stripe; B, A are +1, +2 pitch)
     c_top: float = 32.0  # C top-left
     c_bowl: float = 20.0  # C bottom-left
     s_foot: float = 4.0  # S bottom-right
+    # S middle runs horizontally on rows 3 (Main), 4 (D), 5 (E). Its length for
+    # D is (col_s_bottom - col_s_top) - (s_bowl + s_waist + 2 * pitch) * 1.428
+    # (1.428 = tan 55 deg for the 110 deg turns); it must stay >= 0.
     s_bowl: float = 4.0  # S lower bowl, top-right
-    s_waist: float = 4.0  # S middle, left
-    s_top: float = 8.0  # S top-left
-    # free vertical position of the two S middle pulleys (y of centre)
-    s_bowl_y: float = 44.0
-    s_waist_y: float = 82.0
+    s_waist: float = 1.0  # S middle, left
+    s_top: float = 10.0  # S top-left
 
     @property
     def pitch(self) -> float:
@@ -97,20 +97,11 @@ def build(p: Params) -> Logo:
     # outside D (hard corner), so it stays exactly one pitch from D.
     main_bowl = knee(bowl_d.c, p.c_bowl + 2 * P, row(5))
 
-    # S middle pulleys: centre on a line parallel to the column
-    sin_s = math.sin(math.radians(p.slant))
-
-    def x_on(line: Line, y: float) -> float:
-        return line.q[0] + (y - line.q[1]) * line.u[0] / line.u[1]
-
-    bowl_x = x_on(sl[0], p.s_bowl_y) - p.s_bowl / sin_s
-    waist_x = x_on(su[2], p.s_waist_y) + p.s_waist / sin_s
-
     def s_bowl(k: int) -> Pulley:  # k = 0 E (inner) .. 2 Main (outer)
-        return Pulley((bowl_x, p.s_bowl_y), p.s_bowl + k * P)
+        return corner(sl[k], row(5 - k, east=False), p.s_bowl + k * P)
 
     def s_waist(k: int) -> Pulley:  # k = 0 Main (inner) .. 2 E (outer)
-        return Pulley((waist_x, p.s_waist_y), -(p.s_waist + k * P))
+        return corner(row(3 + k, east=False), su[2 - k], p.s_waist + k * P)
 
     belts = [
         Belt("A", f0, (corner(f0, row(0), p.f_top + 2 * P),), row(0), bottom, cut_f),
