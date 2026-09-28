@@ -139,7 +139,7 @@ def checks(p: Params, belts: list[Belt], shape: pathops.Path) -> list[str]:
     half = p.red / 2
     for b in belts:
         for pul in b.pulleys:
-            if 1e-9 < abs(pul.r) < half - 1e-9:
+            if pul.lines is None and 1e-9 < abs(pul.r) < half - 1e-9:
                 bad.append(f"{b.name}: pulley radius {abs(pul.r):.3f} < red/2")
     step = 0.1
     conts = boundary(shape, step)

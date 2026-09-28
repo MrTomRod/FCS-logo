@@ -79,27 +79,36 @@ def intersect(a: Line, b: Line) -> Vec:
 class Pulley:
     """Circle wrapped by a belt. Signed radius: > 0 turns left, < 0 turns right.
 
-    Two special kinds keep a hard corner under offsetting:
-    - sharp: a mitred corner between two lines (the vertex moves with the offset);
+    Special kinds:
+    - fillet (`lines` set, hard False): rounded corner between two lines. Any
+      radius >= 0 is allowed; where an offset would make the radius negative
+      (inner side of a tight corner) the edge becomes a mitred vertex, which is
+      the exact offset of the corner;
+    - sharp (`lines` set, hard True): mitred on both sides;
     - knee: the belt arrives along `knee` and enters the circle at the
       intersection, without tangency (hard corner), then wraps normally.
     """
 
     c: Vec
     r: float
-    sharp: tuple[Line, Line] | None = None
+    lines: tuple[Line, Line] | None = None
     knee: Line | None = None
+    hard: bool = False
 
     def offset(self, d: float) -> Pulley:
-        if self.sharp:
-            a, b = self.sharp[0].shifted(d), self.sharp[1].shifted(d)
-            return Pulley(intersect(a, b), 0.0, (a, b))
+        if self.lines:
+            a, b = self.lines[0].shifted(d), self.lines[1].shifted(d)
+            s = 1.0 if cross(a.u, b.u) > 0 else -1.0
+            radius = s * self.r - s * d
+            if self.hard or radius <= 0:
+                return Pulley(intersect(a, b), 0.0, (a, b), None, self.hard)
+            return corner(a, b, radius)
         return Pulley(self.c, self.r - d, None, self.knee.shifted(d) if self.knee else None)
 
 
 def sharp(l_in: Line, l_out: Line) -> Pulley:
     """Hard mitred corner between two directed lines."""
-    return Pulley(intersect(l_in, l_out), 0.0, (l_in, l_out))
+    return Pulley(intersect(l_in, l_out), 0.0, (l_in, l_out), None, True)
 
 
 def knee(c: Vec, r: float, l_in: Line) -> Pulley:
@@ -118,10 +127,10 @@ def circle_entry(line: Line, p: Pulley) -> Vec:
 
 
 def corner(l_in: Line, l_out: Line, radius: float) -> Pulley:
-    """Fillet pulley of the given radius between two directed lines."""
+    """Fillet pulley of the given radius (>= 0) between two directed lines."""
     s = 1.0 if cross(l_in.u, l_out.u) > 0 else -1.0
     c = intersect(l_in.shifted(s * radius), l_out.shifted(s * radius))
-    return Pulley(c, s * radius)
+    return Pulley(c, s * radius, (l_in, l_out))
 
 
 def tangent(p1: Pulley, p2: Pulley) -> tuple[Vec, Vec, Vec]:

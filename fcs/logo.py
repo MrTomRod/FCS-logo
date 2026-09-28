@@ -40,8 +40,11 @@ class Params:
     # D is (col_s_bottom - col_s_top) - (s_bowl + s_waist + 2 * pitch) * 1.428
     # (1.428 = tan 55 deg for the 110 deg turns); it must stay >= 0.
     s_bowl: float = 4.0  # S lower bowl, top-right
-    s_waist: float = 1.0  # S middle, left
+    s_waist: float = 1.0  # S middle, left (0 = sharp inner corner)
     s_top: float = 10.0  # S top-left
+    # moves the S middle rows down; lengthens the upper-left S straight by
+    # s_drop / sin(slant) and shortens the lower bowl straight by the same
+    s_drop: float = 3.0
 
     @property
     def pitch(self) -> float:
@@ -65,7 +68,7 @@ def build(p: Params) -> Logo:
     down = (-up[0], -up[1])
     top = 8 * P
 
-    def row(k: int, east: bool = True) -> Line:
+    def row(k: float, east: bool = True) -> Line:
         return Line((0.0, (8 - k) * P), (1.0, 0.0) if east else (-1.0, 0.0))
 
     def col(x0: float, j: float = 0, going_up: bool = True) -> Line:
@@ -98,10 +101,10 @@ def build(p: Params) -> Logo:
     main_bowl = knee(bowl_d.c, p.c_bowl + 2 * P, row(5))
 
     def s_bowl(k: int) -> Pulley:  # k = 0 E (inner) .. 2 Main (outer)
-        return corner(sl[k], row(5 - k, east=False), p.s_bowl + k * P)
+        return corner(sl[k], row(5 - k + p.s_drop / P, east=False), p.s_bowl + k * P)
 
     def s_waist(k: int) -> Pulley:  # k = 0 Main (inner) .. 2 E (outer)
-        return corner(row(3 + k, east=False), su[2 - k], p.s_waist + k * P)
+        return corner(row(3 + k + p.s_drop / P, east=False), su[2 - k], p.s_waist + k * P)
 
     belts = [
         Belt("A", f0, (corner(f0, row(0), p.f_top + 2 * P),), row(0), bottom, cut_f),
