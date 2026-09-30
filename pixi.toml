@@ -1,6 +1,6 @@
 [workspace]
 name = "fcs-logo"
-description = "Exact, parametric vector construction of the FC S crest"
+description = "Exact, parametric vector construction of the FCS logo"
 channels = ["conda-forge"]
 platforms = ["linux-64"]
 
